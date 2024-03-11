@@ -1,0 +1,29 @@
+version: '3.8'
+services:
+  flask-backend: 
+    image: flask-backend_1  
+    networks:
+      - my-net     
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/app
+
+  streamlit-frontend:
+    image: streamlit-frontend_1
+    networks:
+      - my-net
+    depends_on:
+      - flask-backend
+    build:
+      context: .
+      dockerfile: Dockerfile.streamlit
+    ports:
+      - "8501:8501"
+    volumes:
+      - .:/app
+networks:
+  my-net:
