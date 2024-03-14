@@ -1,7 +1,9 @@
 # backend/app.py
+from docarray import DocumentArray, Document
+import numpy as np
+import json
 
 from flask import Flask, request, jsonify
-import pickle
 from jina import Document, Flow
 from flask_cors import CORS
 
@@ -10,8 +12,20 @@ CORS(app)
 
 
 # Load indexed data from pickle file
-with open('indexed_data.pickle', 'rb') as handle:
-    indexed_data = pickle.load(handle)
+# with open('indexed_data.pickle', 'rb') as handle:
+#     indexed_data = pickle.load(handle)
+da = DocumentArray()
+
+with open('icecat-products-w_price-19k-20201127.json') as f:
+    jdocs = json.load(f)
+for doc in jdocs:
+    d = Document(text=" ".join([doc[item] for item in doc if item.startswith("title") 
+    or item.startswith("attr_t")
+    or item.startswith("short_description") 
+    or item.startswith("name")
+    or item.startswith("supplier")]), tags=doc)
+    da.append(d)
+
 
 # Create Flow for querying
 f = Flow().add(name='encoder', uses='jinahub://TransformerTorchEncoder/latest', install_requirements=True)\
@@ -19,6 +33,13 @@ f = Flow().add(name='encoder', uses='jinahub://TransformerTorchEncoder/latest', 
               uses_with={'columns': [('supplier', 'str'), ('price', 'float'),
                                      ('attr_t_product_type', 'str'), ('attr_t_product_colour', 'str')],
                          'n_dim': 768})
+
+da = da[1:1000]
+
+with f:
+  da = f.index(da)
+  print(da[0])
+  print(type(da))
 
 @app.route('/')
 def index():
